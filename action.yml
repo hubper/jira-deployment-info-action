@@ -1,0 +1,20 @@
+name: "Jira Production Deployment Info"
+description: "Let's you inform Jira which issue keys went to production since latest deployment"
+inputs:
+  cloud-instance-base-url:
+    description: "Jira cloud url, i.e. 'https://my-company.atlassian.net'"
+    required: true
+  environment-type:
+    description: "One of `development`, `testing`, `staging`, `production`"
+    required: true
+  environment-name:
+    description: "Name of the environment, i.e. 'Production' / 'Acceptance' / 'Test'"
+    required: true
+  branch-name:
+    description: "Name of the branch"
+    required: false
+    default: "master"
+
+runs:
+  using: "node12"
+  main: "dist/index.js"
