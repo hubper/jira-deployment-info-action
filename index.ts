@@ -192,7 +192,7 @@ async function run() {
   const hasAllRequiredVars = requiredEnvVars.every(key =>
     Boolean(process.env[key])
   );
-  if (hasAllRequiredVars) {
+  if (!hasAllRequiredVars) {
     setFailed(
       `Please make sure that all required env-variables are provided: ${requiredEnvVars.join(
         ", "

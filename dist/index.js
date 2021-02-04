@@ -120,7 +120,7 @@ async function run() {
         "GITHUB_TOKEN"
     ];
     const hasAllRequiredVars = requiredEnvVars.every(key => Boolean(process.env[key]));
-    if (hasAllRequiredVars) {
+    if (!hasAllRequiredVars) {
         core_1.setFailed(`Please make sure that all required env-variables are provided: ${requiredEnvVars.join(", ")}`);
         return;
     }
