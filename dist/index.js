@@ -69,7 +69,7 @@ async function informJiraProductionDeployment(issueKeys) {
         updateSequenceNumber: process.env["GITHUB_RUN_ID"],
         displayName,
         url: `${github_1.context.payload.repository.url}/actions/runs/${process.env["GITHUB_RUN_ID"]}`,
-        description: "",
+        description: `Deployment on ${displayName}`,
         lastUpdated: dateformat(new Date(), "yyyy-mm-dd'T'HH:MM:ss'Z'") || "",
         label: "",
         state: "successful",
