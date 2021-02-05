@@ -30,13 +30,31 @@ const octokit = new rest_1.Octokit({
     auth: TOKEN
 });
 async function getCommitMessagesSinceLatestTag() {
-    const result = await octokit.repos.compareCommits({
-        owner: OWNER,
-        repo: REPO,
-        base: TAG_NAME,
-        head: BRANCH
-    });
-    return result.data.commits.map(commit => commit.commit.message);
+    try {
+        const result = await octokit.repos.compareCommits({
+            owner: OWNER,
+            repo: REPO,
+            base: TAG_NAME,
+            head: BRANCH
+        });
+        return result.data.commits.map(commit => commit.commit.message);
+    }
+    catch (e) {
+        if (e.response?.status === 404) {
+            await octokit.git.createTag({
+                owner: OWNER,
+                repo: REPO,
+                tag: TAG_NAME,
+                message: `Deployment to ${JIRA_INFO["environment-name"]}`,
+                object: github_1.context.sha,
+                type: "commit"
+            });
+            return [];
+        }
+        else {
+            throw e;
+        }
+    }
 }
 const jiraIssueNrPattern = /([A-Z]+-\d+)/;
 function extractJiraIssuesFromTags(messages) {
@@ -98,19 +116,18 @@ async function informJiraProductionDeployment(issueKeys) {
         throw new Error(message);
     }
 }
-async function createTagForHead() {
+async function updateTagForHead() {
     const { data: { sha } } = await octokit.repos.getCommit({
         ref: BRANCH,
         owner: OWNER,
         repo: REPO
     });
-    return octokit.git.createTag({
+    return octokit.git.updateRef({
         owner: OWNER,
         repo: REPO,
-        tag: TAG_NAME,
-        message: `Deployment to ${JIRA_INFO["environment-name"]}`,
-        object: sha,
-        type: "commit"
+        ref: `refs/tags/${TAG_NAME}`,
+        sha,
+        force: true
     });
 }
 async function run() {
@@ -145,13 +162,13 @@ async function run() {
         return;
     }
     try {
-        await createTagForHead();
+        await updateTagForHead();
     }
     catch (err) {
         core_1.setFailed(`An error occured while tagging latest commit: ${String(err)}`);
         return;
     }
-    console.log("Successfully informed Jira about production deployment for issue-keys: ");
+    console.log(`Successfully informed Jira about ${JIRA_INFO["environment-name"]} deployment for issue-keys:`);
     console.log(keys.join("\n"));
 }
 run();

@@ -2,7 +2,7 @@ import { Octokit } from "@octokit/rest";
 import { getInput, warning, setFailed } from "@actions/core";
 import { context } from "@actions/github";
 import * as dateformat from "dateformat";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 interface Deployment {
   schemaVersion?: string;
   deploymentSequenceNumber: string;
@@ -62,14 +62,31 @@ const octokit = new Octokit({
 });
 
 async function getCommitMessagesSinceLatestTag() {
-  const result = await octokit.repos.compareCommits({
-    owner: OWNER,
-    repo: REPO,
-    base: TAG_NAME,
-    head: BRANCH
-  });
+  try {
+    const result = await octokit.repos.compareCommits({
+      owner: OWNER,
+      repo: REPO,
+      base: TAG_NAME,
+      head: BRANCH
+    });
 
-  return result.data.commits.map(commit => commit.commit.message);
+    return result.data.commits.map(commit => commit.commit.message);
+  } catch (e) {
+    if ((e as AxiosError).response?.status === 404) {
+      await octokit.git.createTag({
+        owner: OWNER,
+        repo: REPO,
+        tag: TAG_NAME,
+        message: `Deployment to ${JIRA_INFO["environment-name"]}`,
+        object: context.sha,
+        type: "commit"
+      });
+
+      return [];
+    } else {
+      throw e;
+    }
+  }
 }
 
 const jiraIssueNrPattern = /([A-Z]+-\d+)/;
@@ -164,7 +181,7 @@ async function informJiraProductionDeployment(issueKeys: string[]) {
   }
 }
 
-async function createTagForHead() {
+async function updateTagForHead() {
   const {
     data: { sha }
   } = await octokit.repos.getCommit({
@@ -173,13 +190,12 @@ async function createTagForHead() {
     repo: REPO
   });
 
-  return octokit.git.createTag({
+  return octokit.git.updateRef({
     owner: OWNER,
     repo: REPO,
-    tag: TAG_NAME,
-    message: `Deployment to ${JIRA_INFO["environment-name"]}`,
-    object: sha,
-    type: "commit"
+    ref: `refs/tags/${TAG_NAME}`,
+    sha,
+    force: true
   });
 }
 
@@ -229,14 +245,14 @@ async function run() {
   }
 
   try {
-    await createTagForHead();
+    await updateTagForHead();
   } catch (err) {
     setFailed(`An error occured while tagging latest commit: ${String(err)}`);
     return;
   }
 
   console.log(
-    "Successfully informed Jira about production deployment for issue-keys: "
+    `Successfully informed Jira about ${JIRA_INFO["environment-name"]} deployment for issue-keys:`
   );
   console.log(keys.join("\n"));
 }
