@@ -3,10 +3,19 @@ module.exports =
 /******/ 	var __webpack_modules__ = ({
 
 /***/ 2932:
-/***/ ((__unused_webpack_module, exports, __nccwpck_require__) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const rest_1 = __nccwpck_require__(5375);
 const core_1 = __nccwpck_require__(2186);
@@ -29,32 +38,35 @@ const JIRA_CLIENT_SECRET = process.env["JIRA_CLIENT_SECRET"];
 const octokit = new rest_1.Octokit({
     auth: TOKEN
 });
-async function getCommitMessagesSinceLatestTag() {
-    try {
-        const result = await octokit.repos.compareCommits({
-            owner: OWNER,
-            repo: REPO,
-            base: TAG_NAME,
-            head: BRANCH
-        });
-        return result.data.commits.map(commit => commit.commit.message);
-    }
-    catch (e) {
-        if (e.response?.status === 404) {
-            await octokit.git.createTag({
+function getCommitMessagesSinceLatestTag() {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const result = yield octokit.repos.compareCommits({
                 owner: OWNER,
                 repo: REPO,
-                tag: TAG_NAME,
-                message: `Deployment to ${JIRA_INFO["environment-name"]}`,
-                object: github_1.context.sha,
-                type: "commit"
+                base: TAG_NAME,
+                head: BRANCH
             });
-            return [];
+            return result.data.commits.map(commit => commit.commit.message);
         }
-        else {
-            throw e;
+        catch (e) {
+            if (((_a = e.response) === null || _a === void 0 ? void 0 : _a.status) === 404) {
+                yield octokit.git.createTag({
+                    owner: OWNER,
+                    repo: REPO,
+                    tag: TAG_NAME,
+                    message: `Deployment to ${JIRA_INFO["environment-name"]}`,
+                    object: github_1.context.sha,
+                    type: "commit"
+                });
+                return [];
+            }
+            else {
+                throw e;
+            }
         }
-    }
+    });
 }
 const jiraIssueNrPattern = /([A-Z]+-\d+)/;
 function extractJiraIssuesFromTags(messages) {
@@ -69,107 +81,115 @@ function extractJiraIssuesFromTags(messages) {
     }
     return Array.from(result);
 }
-async function getJiraAccessToken() {
-    const { data: { access_token } } = await axios_1.default.post("https://api.atlassian.com/oauth/token", {
-        audience: "api.atlassian.com",
-        grant_type: "client_credentials",
-        client_id: JIRA_CLIENT_ID,
-        client_secret: JIRA_CLIENT_SECRET
+function getJiraAccessToken() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { data: { access_token } } = yield axios_1.default.post("https://api.atlassian.com/oauth/token", {
+            audience: "api.atlassian.com",
+            grant_type: "client_credentials",
+            client_id: JIRA_CLIENT_ID,
+            client_secret: JIRA_CLIENT_SECRET
+        });
+        return access_token;
     });
-    return access_token;
 }
-async function informJiraProductionDeployment(issueKeys) {
-    const displayName = JIRA_INFO["environment-name"];
-    const deployment = {
-        issueKeys,
-        schemaVersion: "1.0",
-        deploymentSequenceNumber: process.env["GITHUB_RUN_ID"],
-        updateSequenceNumber: process.env["GITHUB_RUN_ID"],
-        displayName,
-        url: `${github_1.context.payload.repository.url}/actions/runs/${process.env["GITHUB_RUN_ID"]}`,
-        description: `Deployment on ${displayName}`,
-        lastUpdated: dateformat(new Date(), "yyyy-mm-dd'T'HH:MM:ss'Z'") || "",
-        label: "",
-        state: "successful",
-        pipeline: {
-            id: `${github_1.context.payload.repository.full_name} ${github_1.context.workflow}`,
-            displayName: `Workflow: ${github_1.context.workflow} (#${process.env["GITHUB_RUN_NUMBER"]})`,
-            url: `${github_1.context.payload.repository.url}/actions/runs/${process.env["GITHUB_RUN_ID"]}`
-        },
-        environment: {
-            id: displayName.toLowerCase(),
-            displayName: displayName,
-            type: JIRA_INFO["environment-type"] || ""
+function informJiraProductionDeployment(issueKeys) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const displayName = JIRA_INFO["environment-name"];
+        const deployment = {
+            issueKeys,
+            schemaVersion: "1.0",
+            deploymentSequenceNumber: process.env["GITHUB_RUN_ID"],
+            updateSequenceNumber: process.env["GITHUB_RUN_ID"],
+            displayName,
+            url: `${github_1.context.payload.repository.url}/actions/runs/${process.env["GITHUB_RUN_ID"]}`,
+            description: `Deployment on ${displayName}`,
+            lastUpdated: dateformat(new Date(), "yyyy-mm-dd'T'HH:MM:ss'Z'") || "",
+            label: "",
+            state: "successful",
+            pipeline: {
+                id: `${github_1.context.payload.repository.full_name} ${github_1.context.workflow}`,
+                displayName: `Workflow: ${github_1.context.workflow} (#${process.env["GITHUB_RUN_NUMBER"]})`,
+                url: `${github_1.context.payload.repository.url}/actions/runs/${process.env["GITHUB_RUN_ID"]}`
+            },
+            environment: {
+                id: displayName.toLowerCase(),
+                displayName: displayName,
+                type: JIRA_INFO["environment-type"] || ""
+            }
+        };
+        const { data: { cloudId } } = yield axios_1.default.get(`${JIRA_INFO["cloud-instance-base-url"]}/_edge/tenant_info`);
+        const { data: { rejectedDeployments } } = yield axios_1.default.post(`https://api.atlassian.com/jira/deployments/0.1/cloud/${cloudId}/bulk`, { deployments: [deployment] }, {
+            headers: {
+                Authorization: `Bearer ${yield getJiraAccessToken()}`
+            }
+        });
+        if (rejectedDeployments && rejectedDeployments.length > 0) {
+            const [rejectedDeployment] = rejectedDeployments;
+            const message = rejectedDeployment.errors
+                .map(error => error.message)
+                .join(", ");
+            throw new Error(message);
         }
-    };
-    const { data: { cloudId } } = await axios_1.default.get(`${JIRA_INFO["cloud-instance-base-url"]}/_edge/tenant_info`);
-    const { data: { rejectedDeployments } } = await axios_1.default.post(`https://api.atlassian.com/jira/deployments/0.1/cloud/${cloudId}/bulk`, { deployments: [deployment] }, {
-        headers: {
-            Authorization: `Bearer ${await getJiraAccessToken()}`
+    });
+}
+function updateTagForHead() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { data: { sha } } = yield octokit.repos.getCommit({
+            ref: BRANCH,
+            owner: OWNER,
+            repo: REPO
+        });
+        return octokit.git.updateRef({
+            owner: OWNER,
+            repo: REPO,
+            ref: `refs/tags/${TAG_NAME}`,
+            sha,
+            force: true
+        });
+    });
+}
+function run() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const requiredEnvVars = [
+            "JIRA_CLIENT_ID",
+            "JIRA_CLIENT_SECRET",
+            "GITHUB_TOKEN"
+        ];
+        const hasAllRequiredVars = requiredEnvVars.every(key => Boolean(process.env[key]));
+        if (!hasAllRequiredVars) {
+            core_1.setFailed(`Please make sure that all required env-variables are provided: ${requiredEnvVars.join(", ")}`);
+            return;
         }
+        let messages;
+        try {
+            messages = yield getCommitMessagesSinceLatestTag();
+        }
+        catch (err) {
+            core_1.setFailed(`An error occured while retreiving commit messages: ${String(err)}`);
+            return;
+        }
+        const keys = extractJiraIssuesFromTags(messages);
+        if (!keys.length) {
+            core_1.warning("There are no issue keys found. Aborting...");
+            return;
+        }
+        try {
+            yield informJiraProductionDeployment(keys);
+        }
+        catch (err) {
+            core_1.setFailed(`An error occured while sending deployment info to Jira: ${String(err)}`);
+            return;
+        }
+        try {
+            yield updateTagForHead();
+        }
+        catch (err) {
+            core_1.setFailed(`An error occured while tagging latest commit: ${String(err)}`);
+            return;
+        }
+        console.log(`Successfully informed Jira about ${JIRA_INFO["environment-name"]} deployment for issue-keys:`);
+        console.log(keys.join("\n"));
     });
-    if (rejectedDeployments && rejectedDeployments.length > 0) {
-        const [rejectedDeployment] = rejectedDeployments;
-        const message = rejectedDeployment.errors
-            .map(error => error.message)
-            .join(", ");
-        throw new Error(message);
-    }
-}
-async function updateTagForHead() {
-    const { data: { sha } } = await octokit.repos.getCommit({
-        ref: BRANCH,
-        owner: OWNER,
-        repo: REPO
-    });
-    return octokit.git.updateRef({
-        owner: OWNER,
-        repo: REPO,
-        ref: `refs/tags/${TAG_NAME}`,
-        sha,
-        force: true
-    });
-}
-async function run() {
-    const requiredEnvVars = [
-        "JIRA_CLIENT_ID",
-        "JIRA_CLIENT_SECRET",
-        "GITHUB_TOKEN"
-    ];
-    const hasAllRequiredVars = requiredEnvVars.every(key => Boolean(process.env[key]));
-    if (!hasAllRequiredVars) {
-        core_1.setFailed(`Please make sure that all required env-variables are provided: ${requiredEnvVars.join(", ")}`);
-        return;
-    }
-    let messages;
-    try {
-        messages = await getCommitMessagesSinceLatestTag();
-    }
-    catch (err) {
-        core_1.setFailed(`An error occured while retreiving commit messages: ${String(err)}`);
-        return;
-    }
-    const keys = extractJiraIssuesFromTags(messages);
-    if (!keys.length) {
-        core_1.warning("There are no issue keys found. Aborting...");
-        return;
-    }
-    try {
-        await informJiraProductionDeployment(keys);
-    }
-    catch (err) {
-        core_1.setFailed(`An error occured while sending deployment info to Jira: ${String(err)}`);
-        return;
-    }
-    try {
-        await updateTagForHead();
-    }
-    catch (err) {
-        core_1.setFailed(`An error occured while tagging latest commit: ${String(err)}`);
-        return;
-    }
-    console.log(`Successfully informed Jira about ${JIRA_INFO["environment-name"]} deployment for issue-keys:`);
-    console.log(keys.join("\n"));
 }
 run();
 
