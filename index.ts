@@ -52,7 +52,7 @@ const JIRA_INFO = (Object.fromEntries(
 const OWNER = context.payload.repository!.owner.login;
 const REPO = context.payload.repository!.name;
 const BRANCH = JIRA_INFO["branch-name"] || "master";
-const TAG_NAME = `${JIRA_INFO["environment-name"].toLowerCase()}-deployment`;
+const REF = `deployments/${JIRA_INFO["environment-name"].toLowerCase()}`;
 
 const TOKEN = process.env["GITHUB_TOKEN"];
 const JIRA_CLIENT_ID = process.env["JIRA_CLIENT_ID"];
@@ -66,20 +66,18 @@ async function getCommitMessagesSinceLatestTag() {
     const result = await octokit.repos.compareCommits({
       owner: OWNER,
       repo: REPO,
-      base: TAG_NAME,
+      base: REF,
       head: BRANCH
     });
 
     return result.data.commits.map(commit => commit.commit.message);
   } catch (e) {
     if ((e as AxiosError).response?.status === 404) {
-      await octokit.git.createTag({
+      await octokit.git.createRef({
         owner: OWNER,
         repo: REPO,
-        tag: TAG_NAME,
-        message: `Deployment to ${JIRA_INFO["environment-name"]}`,
-        object: context.sha,
-        type: "commit"
+        ref: `refs/${REF}`,
+        sha: context.sha
       });
 
       return [];
@@ -193,9 +191,8 @@ async function updateTagForHead() {
   return octokit.git.updateRef({
     owner: OWNER,
     repo: REPO,
-    ref: `refs/tags/${TAG_NAME}`,
-    sha,
-    force: true
+    ref: `refs/${REF}`,
+    sha
   });
 }
 

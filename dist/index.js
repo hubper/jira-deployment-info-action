@@ -31,7 +31,7 @@ const JIRA_INFO = Object.fromEntries([
 const OWNER = github_1.context.payload.repository.owner.login;
 const REPO = github_1.context.payload.repository.name;
 const BRANCH = JIRA_INFO["branch-name"] || "master";
-const TAG_NAME = `${JIRA_INFO["environment-name"].toLowerCase()}-deployment`;
+const REF = `deployments/${JIRA_INFO["environment-name"].toLowerCase()}`;
 const TOKEN = process.env["GITHUB_TOKEN"];
 const JIRA_CLIENT_ID = process.env["JIRA_CLIENT_ID"];
 const JIRA_CLIENT_SECRET = process.env["JIRA_CLIENT_SECRET"];
@@ -45,20 +45,18 @@ function getCommitMessagesSinceLatestTag() {
             const result = yield octokit.repos.compareCommits({
                 owner: OWNER,
                 repo: REPO,
-                base: TAG_NAME,
+                base: REF,
                 head: BRANCH
             });
             return result.data.commits.map(commit => commit.commit.message);
         }
         catch (e) {
             if (((_a = e.response) === null || _a === void 0 ? void 0 : _a.status) === 404) {
-                yield octokit.git.createTag({
+                yield octokit.git.createRef({
                     owner: OWNER,
                     repo: REPO,
-                    tag: TAG_NAME,
-                    message: `Deployment to ${JIRA_INFO["environment-name"]}`,
-                    object: github_1.context.sha,
-                    type: "commit"
+                    ref: `refs/${REF}`,
+                    sha: github_1.context.sha
                 });
                 return [];
             }
@@ -142,9 +140,8 @@ function updateTagForHead() {
         return octokit.git.updateRef({
             owner: OWNER,
             repo: REPO,
-            ref: `refs/tags/${TAG_NAME}`,
-            sha,
-            force: true
+            ref: `refs/${REF}`,
+            sha
         });
     });
 }
