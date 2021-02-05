@@ -39,7 +39,6 @@ const octokit = new rest_1.Octokit({
     auth: TOKEN
 });
 function getCommitMessagesSinceLatestTag() {
-    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const result = yield octokit.repos.compareCommits({
@@ -51,7 +50,7 @@ function getCommitMessagesSinceLatestTag() {
             return result.data.commits.map(commit => commit.commit.message);
         }
         catch (e) {
-            if (((_a = e.response) === null || _a === void 0 ? void 0 : _a.status) === 404) {
+            if ((e === null || e === void 0 ? void 0 : e.status) === 404) {
                 yield octokit.git.createRef({
                     owner: OWNER,
                     repo: REPO,

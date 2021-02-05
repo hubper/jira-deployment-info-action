@@ -72,7 +72,7 @@ async function getCommitMessagesSinceLatestTag() {
 
     return result.data.commits.map(commit => commit.commit.message);
   } catch (e) {
-    if ((e as AxiosError).response?.status === 404) {
+    if (e?.status === 404) {
       await octokit.git.createRef({
         owner: OWNER,
         repo: REPO,
