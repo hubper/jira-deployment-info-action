@@ -191,7 +191,7 @@ async function updateTagForHead() {
   return octokit.git.updateRef({
     owner: OWNER,
     repo: REPO,
-    ref: `refs/${REF}`,
+    ref: REF,
     sha
   });
 }
