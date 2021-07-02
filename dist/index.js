@@ -169,6 +169,9 @@ function run() {
             core_1.warning("There are no issue keys found. Aborting...");
             return;
         }
+        core_1.setOutput("issue-urls", keys
+            .map(key => `${JIRA_INFO["cloud-instance-base-url"]}/browse/${key}`)
+            .join("\n"));
         try {
             yield informJiraProductionDeployment(keys);
         }

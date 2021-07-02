@@ -14,6 +14,9 @@ inputs:
     description: "Name of the branch"
     required: false
     default: "master"
+outputs:
+  issue-urls:
+    description: "A list if issue-urls for the detected issue-numbers. Useful for input in other actions further down the pipeline."
 
 runs:
   using: "node12"

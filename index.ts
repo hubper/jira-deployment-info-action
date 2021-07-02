@@ -1,5 +1,5 @@
 import { Octokit } from "@octokit/rest";
-import { getInput, warning, setFailed } from "@actions/core";
+import { getInput, warning, setFailed, setOutput } from "@actions/core";
 import { context } from "@actions/github";
 import * as dateformat from "dateformat";
 import axios from "axios";
@@ -231,6 +231,13 @@ async function run() {
     warning("There are no issue keys found. Aborting...");
     return;
   }
+
+  setOutput(
+    "issue-urls",
+    keys
+      .map(key => `${JIRA_INFO["cloud-instance-base-url"]}/browse/${key}`)
+      .join("\n")
+  );
 
   try {
     await informJiraProductionDeployment(keys);
