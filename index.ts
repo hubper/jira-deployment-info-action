@@ -87,7 +87,7 @@ async function getCommitMessagesSinceLatestTag() {
   }
 }
 
-const jiraIssueNrPattern = /([A-Z]+-\d+)/;
+const jiraIssueNrPattern = /([A-Z]{2,}-\d+)/;
 
 function extractJiraIssuesFromTags(messages: string[]): string[] {
   const result: Set<string> = new Set();
